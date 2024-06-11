@@ -3,3 +3,6 @@
 
 # Ignore followed channels file
 */followed_channels.txt
+
+# Ignore .csv because they are too big
+*.csv

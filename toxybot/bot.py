@@ -7,7 +7,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 # Command prefix
-COMMAND_PREFIX = '&toxy'
+COMMAND_PREFIX = '/toxme'
 
 # File to store followed channels
 CHANNELS_FILE = 'followed_channels.txt'
