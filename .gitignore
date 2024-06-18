@@ -6,3 +6,6 @@
 
 # Ignore .csv because they are too big
 *.csv
+
+# Ignore lightning_logs folder
+lightning_logs/
