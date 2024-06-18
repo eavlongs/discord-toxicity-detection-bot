@@ -83,13 +83,13 @@ class ToxicityDataModule(pl.LightningDataModule):
             self.val_ds = ToxicityDataset(self.val_data, self.tokenizer, max_token_len, sample=None)
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size = self.batch_size, num_workers=7, shuffle=True, persistent_workers=True)
+        return DataLoader(self.train_ds, batch_size = self.batch_size, num_workers=4, shuffle=True, persistent_workers=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size = self.batch_size, num_workers=5, shuffle=False,  persistent_workers=True)
+        return DataLoader(self.val_ds, batch_size = self.batch_size, num_workers=4, shuffle=False,  persistent_workers=True)
 
     def predict_dataloader(self):
-        return DataLoader(self.val_ds, batch_size = self.batch_size, num_workers=5, shuffle=False, persistent_workers=True)
+        return DataLoader(self.val_ds, batch_size = self.batch_size, num_workers=4, shuffle=False, persistent_workers=True)
 
 class ToxicityClassifier(pl.LightningModule):
     def __init__(self, config: dict):
@@ -166,6 +166,8 @@ data_module.setup()
 print("setup data module")
 
 model = ToxicityClassifier(config)
+print(model.device)
+model.to("cuda")
 
 # idx=0
 # input_ids = train_dataset.__getitem__(idx)['input_ids']
