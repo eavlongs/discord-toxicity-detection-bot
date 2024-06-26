@@ -32,9 +32,12 @@ def main():
     data_module = ToxicityDataModule(train_ds, val_ds, max_token_len, model_name = config["model_name"], batch_size = config["batch_size"])
     data_module.setup()
 
-    trainer = pl.Trainer(max_epochs=config["n_epochs"], num_sanity_val_steps=2, logger = True, enable_progress_bar = True, num_nodes = 1)
+    trainer = pl.Trainer(max_epochs=config["n_epochs"], num_sanity_val_steps=2, logger = True, enable_progress_bar = True, num_nodes = 1, precision=16) # change to 16-mixed in the future
     model = ToxicityClassifier(config)
-    model.to("cuda")
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+    torch.set_float32_matmul_precision("medium")
 
     model.load_state_dict(torch.load("./trained/v1.pth"))
 

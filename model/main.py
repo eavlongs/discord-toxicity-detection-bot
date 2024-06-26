@@ -56,9 +56,13 @@ data_module.setup()
 print("setup data module")
 
 model = ToxicityClassifier(config)
-model.to("cuda")
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model.to(device)
+torch.set_float32_matmul_precision("medium")
 
 # if __name__ == "__main__":
-#     trainer = pl.Trainer(max_epochs=config["n_epochs"], num_sanity_val_steps=2, logger = True, enable_progress_bar = True, num_nodes = 1)
+#     trainer = pl.Trainer(max_epochs=config["n_epochs"], num_sanity_val_steps=2, logger = True, enable_progress_bar = True, num_nodes = 1, precision=16)
 #     print("created model. starting to fit the model...")
 #     trainer.fit(model, data_module)
+#     torch.save(model.state_dict(), './model.pth')
