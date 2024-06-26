@@ -46,7 +46,8 @@ config = {
     "warmup": 0.1,
     "train_size": len(tmp_data_module.train_dataloader()),
     "w_decay": 0.001,
-    "n_epochs": 3
+    "n_epochs": 3,
+    "threshold": 4
 }
 
 json.dump(config, open("config.json", "w"))
