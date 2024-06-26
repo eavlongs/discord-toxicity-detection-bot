@@ -21,9 +21,11 @@ print("loaded data")
 
 X = ds["comment_text"]
 y = ds["score"]
+X, _, y, _ = train_test_split(X, y, test_size=0.7, random_state=103)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=103)
 train_ds = pd.DataFrame({"comment_text": X_train, "score": y_train})
 val_ds = pd.DataFrame({"comment_text": X_test, "score": y_test})
+
 
 model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -39,12 +41,12 @@ print("setup data module")
 config = {
     "model_name": "distilroberta-base",
     "n_labels": 1,
-    "batch_size": 128,
-    "lr": 1.5e-6,
-    "warmup": 0.2,
+    "batch_size": 32,
+    "lr": 1e-4,
+    "warmup": 0.1,
     "train_size": len(tmp_data_module.train_dataloader()),
     "w_decay": 0.001,
-    "n_epochs": 1
+    "n_epochs": 3
 }
 
 json.dump(config, open("config.json", "w"))

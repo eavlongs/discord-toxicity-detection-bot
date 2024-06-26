@@ -16,9 +16,11 @@ def main():
 
     X = ds["comment_text"]
     y = ds["score"]
+    X, _, y, _ = train_test_split(X, y, test_size=0.7, random_state=103)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=103)
     train_ds = pd.DataFrame({"comment_text": X_train, "score": y_train})
     val_ds = pd.DataFrame({"comment_text": X_test, "score": y_test})
+
 
     tmp_data_module = ToxicityDataModule(train_ds, val_ds, max_token_len, model_name = "roberta-base", batch_size=128)
 

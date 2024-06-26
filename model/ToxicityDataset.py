@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset
 
 class ToxicityDataset(Dataset):
-    def __init__(self, data, tokenizer, max_token_len, sample = 700_000):
+    def __init__(self, data, tokenizer, max_token_len, sample = 10_000):
         self.data = data
         self.tokenizer = tokenizer
         self.max_token_len = int(max_token_len)
