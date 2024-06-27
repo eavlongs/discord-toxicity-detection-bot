@@ -120,6 +120,8 @@ def train(epoch):
     nb_tr_examples = 0
     model.train()
     start_time = time.time()
+    print(f"Training Epoch: {epoch}")
+    print(f"Training Dataset Size: {len(train_loader)}")
     for _,data in tqdm(enumerate(train_loader, 0)):
         ids = data['ids'].to(device, dtype = torch.long)
         mask = data['mask'].to(device, dtype = torch.long)
@@ -195,8 +197,8 @@ for epoch in range(EPOCHS):
 acc = valid(model, val_loader)
 print("Accuracy on test data = %0.2f%%" % acc)
 
-output_model_file = './trained.pth'
-output_vocab_file = './'
+output_model_file = './trained/v4.pth'
+output_vocab_file = './vocab/v4'
 
 model_to_save = model
 torch.save(model_to_save, output_model_file)

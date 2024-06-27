@@ -10,4 +10,5 @@
 # Ignore lightning_logs folder
 lightning_logs/
 
-/model/trained
+/model/trained/*
+/model/vocab/*

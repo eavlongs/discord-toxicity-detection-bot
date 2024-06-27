@@ -139,4 +139,5 @@ for epoch in range(EPOCHS):
     accuracy, f1, precision, recall = validate()
     print(f'Epoch: {epoch}, Validation Accuracy: {accuracy}, F1 Score: {f1}, Precision: {precision}, Recall: {recall}')
 
-torch.save(model.state_dict(), './trained/v2.pth')
+torch.save(model.state_dict(), './trained/v3.pth')
+torch.save(model, './trained/v3_full.pth')
