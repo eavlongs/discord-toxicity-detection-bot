@@ -5,6 +5,7 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import RobertaTokenizer, RobertaModel
 from tqdm import tqdm
+import time
 
 # Load the dataset
 data_path = "./dataset/processed/train.csv"
@@ -118,6 +119,7 @@ def train(epoch):
     nb_tr_steps = 0
     nb_tr_examples = 0
     model.train()
+    start_time = time.time()
     for _,data in tqdm(enumerate(train_loader, 0)):
         ids = data['ids'].to(device, dtype = torch.long)
         mask = data['mask'].to(device, dtype = torch.long)
@@ -138,6 +140,8 @@ def train(epoch):
             accu_step = (n_correct*100)/nb_tr_examples
             print(f"Training Loss per 100 steps: {loss_step}")
             print(f"Training Accuracy per 100 steps: {accu_step}")
+            print(f"Time elapsed: {time.time() - start_time:.2f}s")
+            start_time = time.time()
 
         optimizer.zero_grad()
         loss.backward()
