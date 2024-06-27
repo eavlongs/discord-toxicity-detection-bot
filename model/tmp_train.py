@@ -15,9 +15,19 @@ df = pd.read_csv(data_path, dtype={"id": str})
 df['comment_text'] = df['comment_text'].astype(str)
 df['score'] = df['score'].astype(int)
 
+not_toxic = df.loc[df["score"] == 0]
+level_2_toxic = df.loc[df["score"] == 2]
+level_1_toxic = df.loc[df["score"] == 1]
+higher_than_2_toxic = df.loc[df["score"] > 2]
+
+# resample the data, because of imbalance. See test_sample for visualization
+df = pd.concat([not_toxic.sample(100_000, random_state=53), level_2_toxic.sample(80_000, random_state=53), level_1_toxic, higher_than_2_toxic])
+
+# shuffle data
+df.sample(frac=1)
+
 # Split the dataset into training and validation sets
-train_df, val_df = train_test_split(df, test_size=0.9, random_state=42)
-train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=42)
+train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
 class ToxicityDataset(Dataset):
     def __init__(self, df, tokenizer, max_len):
