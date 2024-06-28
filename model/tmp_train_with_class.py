@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
+from sklearn.utils import compute_class_weight
 import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import RobertaTokenizer, RobertaModel
@@ -21,7 +22,7 @@ level_1_toxic = df.loc[df["score"] == 1]
 higher_than_2_toxic = df.loc[df["score"] > 2]
 
 # resample the data, because of imbalance. See test_sample for visualization
-df = pd.concat([not_toxic.sample(100_000, random_state=53), level_2_toxic.sample(80_000, random_state=53), level_1_toxic, higher_than_2_toxic])
+df = pd.concat([not_toxic.sample(70_000, random_state=53), level_2_toxic.sample(65_000, random_state=53), level_1_toxic, higher_than_2_toxic])
 
 # shuffle data
 df.sample(frac=1)
@@ -104,8 +105,11 @@ model = ToxicityClassifer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
+# to solve data imbalance problem
+class_weights = compute_class_weight('balanced', classes=np.unique(df['score']), y=df['score'])
+
 # we are using sparse categorial crossentropy, because its for multi-class classification
-loss_function = torch.nn.CrossEntropyLoss()
+loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
 
 def calcuate_accuracy(preds, targets):

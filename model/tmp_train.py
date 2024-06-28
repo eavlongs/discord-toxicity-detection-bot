@@ -21,7 +21,7 @@ level_1_toxic = df.loc[df["score"] == 1]
 higher_than_2_toxic = df.loc[df["score"] > 2]
 
 # resample the data, because of imbalance. See test_sample for visualization
-df = pd.concat([not_toxic.sample(100_000, random_state=53), level_2_toxic.sample(80_000, random_state=53), level_1_toxic, higher_than_2_toxic])
+df = pd.concat([not_toxic.sample(70_000, random_state=53), level_2_toxic.sample(65_000, random_state=53), level_1_toxic, higher_than_2_toxic])
 
 # shuffle data
 df.sample(frac=1)
