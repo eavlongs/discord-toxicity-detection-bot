@@ -27,8 +27,18 @@ df = pd.concat([not_toxic.sample(70_000, random_state=53), level_2_toxic.sample(
 # shuffle data
 df.sample(frac=1)
 
+# df, _ = train_test_split(df, test_size=0.99999, random_state=8)
+
+# df["score"] = df["score"].apply(lambda x: 3 if x == 4 else x)
+
+# print(np.unique(df['score']))
+
+# exit()
+
 # Split the dataset into training and validation sets
 train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
+
+# print(train_df.shape)
 
 class ToxicityDataset(Dataset):
     def __init__(self, df, tokenizer, max_len):
@@ -87,7 +97,7 @@ class ToxicityClassifer(torch.nn.Module):
         self.l1 = RobertaModel.from_pretrained("roberta-base")
         self.pre_classifier = torch.nn.Linear(768, 768)
         self.dropout = torch.nn.Dropout(0.3)
-        self.classifier = torch.nn.Linear(768, 11)
+        self.classifier = torch.nn.Linear(768, np.unique(df['score']).shape[0])
 
     def forward(self, input_ids, attention_mask, token_type_ids):
         output_1 = self.l1(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
@@ -107,10 +117,11 @@ model = model.to(device)
 
 # to solve data imbalance problem
 class_weights = compute_class_weight('balanced', classes=np.unique(df['score']), y=df['score'])
+class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
 
 # we are using sparse categorial crossentropy, because its for multi-class classification
 loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
-optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE)
+optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
 
 def calcuate_accuracy(preds, targets):
     n_correct = (preds==targets).sum().item()
@@ -172,7 +183,7 @@ def valid(model, testing_loader):
             mask = data['mask'].to(device, dtype = torch.long)
             token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
             targets = data['targets'].to(device, dtype = torch.long)
-            outputs = model(ids, mask, token_type_ids).squeeze()
+            outputs = model(ids, mask, token_type_ids)
             loss = loss_function(outputs, targets)
             tr_loss += loss.item()
             big_val, big_idx = torch.max(outputs.data, dim=1)
