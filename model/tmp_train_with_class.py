@@ -20,9 +20,10 @@ not_toxic = df.loc[df["score"] == 0]
 level_2_toxic = df.loc[df["score"] == 2]
 level_1_toxic = df.loc[df["score"] == 1]
 higher_than_2_toxic = df.loc[df["score"] > 2]
+nine_and_ten = df.loc[df["score"] >= 9]
 
 # resample the data, because of imbalance. See test_sample for visualization
-df = pd.concat([not_toxic.sample(70_000, random_state=53), level_2_toxic.sample(65_000, random_state=53), level_1_toxic, higher_than_2_toxic])
+df = pd.concat([not_toxic.sample(70_000, random_state=53), level_2_toxic.sample(65_000, random_state=53), level_1_toxic, higher_than_2_toxic, nine_and_ten])
 
 # shuffle data
 df.sample(frac=1)
@@ -76,10 +77,10 @@ class ToxicityDataset(Dataset):
 
 # Parameters
 MAX_LEN = 256
-TRAIN_BATCH_SIZE = 8
-VALID_BATCH_SIZE = 4
-EPOCHS = 1
-LEARNING_RATE = 1e-05
+TRAIN_BATCH_SIZE = 16
+VALID_BATCH_SIZE = 16
+EPOCHS = 3
+LEARNING_RATE = 3e-05
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -104,6 +105,7 @@ class ToxicityClassifer(torch.nn.Module):
         hidden_state = output_1[0]
         pooler = hidden_state[:, 0]
         pooler = self.pre_classifier(pooler)
+        print(pooler)
         pooler = torch.nn.ReLU()(pooler)
         pooler = self.dropout(pooler)
         output = self.classifier(pooler)
@@ -122,7 +124,8 @@ class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
 print(class_weights)
 
 # we are using sparse categorial crossentropy, because its for multi-class classification
-loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
+# loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
+loss_function = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
 
 def calcuate_mse(preds, targets):
@@ -184,6 +187,7 @@ def train(epoch):
 def valid(model, testing_loader):
     model.eval()
     n_correct = 0; n_wrong = 0; total = 0; tr_loss=0; nb_tr_steps=0; nb_tr_examples=0; total_mse = 0
+    start_time = time.time()
     with torch.no_grad():
         for _, data in tqdm(enumerate(testing_loader, 0)):
             ids = data['ids'].to(device, dtype=torch.long)
