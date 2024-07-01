@@ -204,20 +204,21 @@ def valid(model, testing_loader):
 
     return epoch_accu
 
-# Uncomment when training
-for epoch in range(EPOCHS):
-    train(epoch)
+if __name__ == "__main__":
+    # Uncomment when training
+    for epoch in range(EPOCHS):
+        train(epoch)
 
-# Uncomment when validating
-acc = valid(model, val_loader)
-print("Accuracy on test data = %0.2f%%" % acc)
+    # Uncomment when validating
+    acc = valid(model, val_loader)
+    print("Accuracy on test data = %0.2f%%" % acc)
 
-output_model_file = './trained/v4.pth'
-output_vocab_file = './vocab/v4'
+    output_model_file = './trained/v4.pth'
+    output_vocab_file = './vocab/v4'
 
-model_to_save = model
-torch.save(model_to_save, output_model_file)
-tokenizer.save_vocabulary(output_vocab_file)
+    model_to_save = model
+    torch.save(model_to_save, output_model_file)
+    tokenizer.save_vocabulary(output_vocab_file)
 
-print('All files saved')
-print('This tutorial is completed')
+    print('All files saved')
+    print('This tutorial is completed')

@@ -10,7 +10,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Load tokenizer and model
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
-model_path = './trained/v2.pth'  # Adjust the path if necessary
+model_path = './trained/v4.pth'  # Adjust the path if necessary
 model = RobertaForSequenceClassification.from_pretrained('roberta-base', num_labels=11)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model = model.to(device)
