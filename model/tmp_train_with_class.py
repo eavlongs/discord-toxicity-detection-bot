@@ -75,13 +75,13 @@ class ToxicityDataset(Dataset):
         }
 
 # Parameters
-MAX_LEN = 192
-TRAIN_BATCH_SIZE = 16
-VALID_BATCH_SIZE = 8
+MAX_LEN = 256
+TRAIN_BATCH_SIZE = 8
+VALID_BATCH_SIZE = 4
 EPOCHS = 1
-LEARNING_RATE = 1e-4
+LEARNING_RATE = 1e-05
 
-tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
 # Create datasets
 training_set = ToxicityDataset(train_df, tokenizer, MAX_LEN)
@@ -119,13 +119,18 @@ model = model.to(device)
 class_weights = compute_class_weight('balanced', classes=np.unique(df['score']), y=df['score'])
 class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
 
+print(class_weights)
+
 # we are using sparse categorial crossentropy, because its for multi-class classification
 loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
 optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
 
 def calcuate_accuracy(preds, targets):
-    n_correct = (preds==targets).sum().item()
-    return n_correct
+    preds = preds.squeeze()
+    targets = targets.float()
+    mse_loss = torch.nn.MSELoss()
+    loss = mse_loss(preds, targets)
+    return loss.item()
 
 # Training function
 def train(epoch):
@@ -156,7 +161,7 @@ def train(epoch):
             loss_step = tr_loss/nb_tr_steps
             accu_step = (n_correct*100)/nb_tr_examples
             print(f"Training Loss per 100 steps: {loss_step}")
-            print(f"Training Accuracy per 100 steps: {accu_step}")
+            print(f"Training MSE per 100 steps: {accu_step}")
             print(f"Time elapsed: {time.time() - start_time:.2f}s")
             start_time = time.time()
 
@@ -165,11 +170,11 @@ def train(epoch):
         # # When using GPU
         optimizer.step()
 
-    print(f'The Total Accuracy for Epoch {epoch}: {(n_correct*100)/nb_tr_examples}')
+    print(f'The Total Accuracy for Epoch {epoch}: {(n_correct)/nb_tr_examples}')
     epoch_loss = tr_loss/nb_tr_steps
-    epoch_accu = (n_correct*100)/nb_tr_examples
+    epoch_accu = (n_correct)/nb_tr_examples
     print(f"Training Loss Epoch: {epoch_loss}")
-    print(f"Training Accuracy Epoch: {epoch_accu}")
+    print(f"Training MSE Epoch: {epoch_accu}")
 
     return
 
@@ -179,28 +184,28 @@ def valid(model, testing_loader):
     n_correct = 0; n_wrong = 0; total = 0; tr_loss=0; nb_tr_steps=0; nb_tr_examples=0
     with torch.no_grad():
         for _, data in tqdm(enumerate(testing_loader, 0)):
-            ids = data['ids'].to(device, dtype = torch.long)
-            mask = data['mask'].to(device, dtype = torch.long)
+            ids = data['ids'].to(device, dtype=torch.long)
+            mask = data['mask'].to(device, dtype=torch.long)
             token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
-            targets = data['targets'].to(device, dtype = torch.long)
+            targets = data['targets'].to(device, dtype=torch.float)
             outputs = model(ids, mask, token_type_ids)
-            loss = loss_function(outputs, targets)
+            loss = torch.nn.MSELoss()(outputs, targets)
             tr_loss += loss.item()
             big_val, big_idx = torch.max(outputs.data, dim=1)
             n_correct += calcuate_accuracy(big_idx, targets)
 
             nb_tr_steps += 1
-            nb_tr_examples+=targets.size(0)
+            nb_tr_examples += targets.size(0)
 
-            if _%100==0:
-                loss_step = tr_loss/nb_tr_steps
-                accu_step = (n_correct*100)/nb_tr_examples
+            if _ % 100 == 0:
+                loss_step = tr_loss / nb_tr_steps
+                accu_step = (n_correct) / nb_tr_examples
                 print(f"Validation Loss per 100 steps: {loss_step}")
-                print(f"Validation Accuracy per 100 steps: {accu_step}")
+                print(f"Validation MSE per 100 steps: {accu_step}")
     epoch_loss = tr_loss/nb_tr_steps
-    epoch_accu = (n_correct*100)/nb_tr_examples
+    epoch_accu = (n_correct)/nb_tr_examples
     print(f"Validation Loss Epoch: {epoch_loss}")
-    print(f"Validation Accuracy Epoch: {epoch_accu}")
+    print(f"Validation MSE Epoch: {epoch_accu}")
 
     return epoch_accu
 
