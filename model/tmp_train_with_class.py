@@ -125,12 +125,12 @@ print(class_weights)
 loss_function = torch.nn.CrossEntropyLoss(weight=torch.tensor(class_weights, dtype=torch.float).to(device))
 optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
 
-def calcuate_accuracy(preds, targets):
-    preds = preds.squeeze()
+def calcuate_mse(preds, targets):
+    mse_loss_fn = torch.nn.MSELoss()
+    preds = preds.float()
     targets = targets.float()
-    mse_loss = torch.nn.MSELoss()
-    loss = mse_loss(preds, targets)
-    return loss.item()
+    mse_loss = mse_loss_fn(preds, targets)
+    return mse_loss.item()
 
 # Training function
 def train(epoch):
@@ -152,7 +152,7 @@ def train(epoch):
         loss = loss_function(outputs, targets)
         tr_loss += loss.item()
         big_val, big_idx = torch.max(outputs.data, dim=1)
-        n_correct += calcuate_accuracy(big_idx, targets)
+        n_correct += calcuate_mse(big_idx, targets)
 
         nb_tr_steps += 1
         nb_tr_examples+=targets.size(0)
@@ -189,10 +189,10 @@ def valid(model, testing_loader):
             token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
             targets = data['targets'].to(device, dtype=torch.float)
             outputs = model(ids, mask, token_type_ids)
-            loss = torch.nn.MSELoss()(outputs, targets)
+            loss = loss_function(outputs, targets)
             tr_loss += loss.item()
             big_val, big_idx = torch.max(outputs.data, dim=1)
-            n_correct += calcuate_accuracy(big_idx, targets)
+            n_correct += calcuate_mse(big_idx, targets)
 
             nb_tr_steps += 1
             nb_tr_examples += targets.size(0)
@@ -214,16 +214,14 @@ if __name__ == "__main__":
     for epoch in range(EPOCHS):
         train(epoch)
 
+    output_model_file = './trained/v7.pth'
+
+    model_to_save = model
+    torch.save(model_to_save, output_model_file)
+
     # Uncomment when validating
     acc = valid(model, val_loader)
     print("Accuracy on test data = %0.2f%%" % acc)
 
-    output_model_file = './trained/v4.pth'
-    output_vocab_file = './vocab/v4'
-
     model_to_save = model
     torch.save(model_to_save, output_model_file)
-    tokenizer.save_vocabulary(output_vocab_file)
-
-    print('All files saved')
-    print('This tutorial is completed')
