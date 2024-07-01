@@ -152,16 +152,17 @@ def train(epoch):
         loss = loss_function(outputs, targets)
         tr_loss += loss.item()
         big_val, big_idx = torch.max(outputs.data, dim=1)
-        n_correct += calcuate_mse(big_idx, targets)
+        mse = calcuate_mse(big_idx, targets)
+        total_mse += mse
 
         nb_tr_steps += 1
-        nb_tr_examples+=targets.size(0)
+        nb_tr_examples += targets.size(0)
 
-        if _%100==0:
-            loss_step = tr_loss/nb_tr_steps
-            accu_step = (n_correct*100)/nb_tr_examples
+        if _ % 100 == 0:
+            loss_step = tr_loss / nb_tr_steps
+            avg_mse = total_mse / nb_tr_steps
             print(f"Training Loss per 100 steps: {loss_step}")
-            print(f"Training MSE per 100 steps: {accu_step}")
+            print(f"Training MSE per 100 steps: {avg_mse}")
             print(f"Time elapsed: {time.time() - start_time:.2f}s")
             start_time = time.time()
 
@@ -192,16 +193,19 @@ def valid(model, testing_loader):
             loss = loss_function(outputs, targets)
             tr_loss += loss.item()
             big_val, big_idx = torch.max(outputs.data, dim=1)
-            n_correct += calcuate_mse(big_idx, targets)
+            mse = calcuate_mse(big_idx, targets)
+            total_mse += mse
 
             nb_tr_steps += 1
             nb_tr_examples += targets.size(0)
 
             if _ % 100 == 0:
                 loss_step = tr_loss / nb_tr_steps
-                accu_step = (n_correct) / nb_tr_examples
+                avg_mse = total_mse / nb_tr_steps
                 print(f"Validation Loss per 100 steps: {loss_step}")
-                print(f"Validation MSE per 100 steps: {accu_step}")
+                print(f"Validation MSE per 100 steps: {avg_mse}")
+                print(f"Time elapsed: {time.time() - start_time:.2f}s")
+                start_time = time.time()
     epoch_loss = tr_loss/nb_tr_steps
     epoch_accu = (n_correct)/nb_tr_examples
     print(f"Validation Loss Epoch: {epoch_loss}")
