@@ -138,6 +138,7 @@ def train(epoch):
     n_correct = 0
     nb_tr_steps = 0
     nb_tr_examples = 0
+    total_mse = 0
     model.train()
     start_time = time.time()
     print(f"Training Epoch: {epoch}")
@@ -182,7 +183,7 @@ def train(epoch):
 # Validation function
 def valid(model, testing_loader):
     model.eval()
-    n_correct = 0; n_wrong = 0; total = 0; tr_loss=0; nb_tr_steps=0; nb_tr_examples=0
+    n_correct = 0; n_wrong = 0; total = 0; tr_loss=0; nb_tr_steps=0; nb_tr_examples=0; total_mse = 0
     with torch.no_grad():
         for _, data in tqdm(enumerate(testing_loader, 0)):
             ids = data['ids'].to(device, dtype=torch.long)
