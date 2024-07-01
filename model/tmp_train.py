@@ -116,7 +116,8 @@ def validate():
     fin_targets = []
     fin_outputs = []
     with torch.no_grad():
-        for _, data in enumerate(val_loader, 0):
+        start_time = time.time()
+        for step, data in enumerate(val_loader, 0):
             ids = data['ids'].to(device, dtype=torch.long)
             mask = data['mask'].to(device, dtype=torch.long)
             token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
@@ -125,6 +126,10 @@ def validate():
             outputs = model(input_ids=ids, attention_mask=mask, token_type_ids=token_type_ids)
             fin_targets.extend(targets.cpu().detach().numpy().tolist())
             fin_outputs.extend(torch.argmax(outputs.logits, dim=1).cpu().detach().numpy().tolist())
+            if step % 100 == 0:
+                elapsed_time = time.time() - start_time
+                print(f'Step: {step}/{len(train_loader)}, Time elapsed: {elapsed_time:.2f}s')
+                start_time = time.time()
 
     accuracy = accuracy_score(fin_targets, fin_outputs)
     f1 = f1_score(fin_targets, fin_outputs, average='weighted')
@@ -133,11 +138,12 @@ def validate():
 
     return accuracy, f1, precision, recall
 
-# Training loop
-for epoch in range(EPOCHS):
-    train(epoch)
-    accuracy, f1, precision, recall = validate()
-    print(f'Epoch: {epoch}, Validation Accuracy: {accuracy}, F1 Score: {f1}, Precision: {precision}, Recall: {recall}')
+if __name__ == "__main__":
+    # Training loop
+    for epoch in range(EPOCHS):
+        train(epoch)
+        accuracy, f1, precision, recall = validate()
+        print(f'Epoch: {epoch}, Validation Accuracy: {accuracy}, F1 Score: {f1}, Precision: {precision}, Recall: {recall}')
 
-torch.save(model.state_dict(), './trained/v3.pth')
-torch.save(model, './trained/v3_full.pth')
+    torch.save(model.state_dict(), './trained/v3.pth')
+    torch.save(model, './trained/v3_full.pth')
