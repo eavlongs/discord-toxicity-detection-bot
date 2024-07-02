@@ -1,24 +1,15 @@
 import torch
 from transformers import RobertaTokenizer, RobertaModel
-from tmp_train_with_class import ToxicityClassifer
+from tmp_train import ToxicityClassifer
 import torch.nn.functional as F
 # Model definition
 model = ToxicityClassifer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-<<<<<<< HEAD
-model_path = './trained/v7.pth'  # Adjust the path if necessary
-model = (torch.load(model_path, map_location=device))
-=======
 model_path = './trained/v8.pth'  # Adjust the path if necessary
 model.load_state_dict(torch.load(model_path, map_location=device))
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
-# model = torch.load(model_path, map_location=device)
-# print(model)
-# model.eval()
-# torch.save(model.state_dict(), './trained/v5.pth')
-# exit()
+
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 MAX_LEN = 196
 def get_prediction(comment):
@@ -46,12 +37,12 @@ def get_prediction(comment):
     with torch.no_grad():
         outputs = model(ids, mask, token_type_ids)
         # Apply softmax to convert logits to probabilities
+        print(outputs)
         probabilities = F.softmax(outputs, dim=1)
         print(probabilities)
         _, predicted_idx = torch.max(probabilities, dim=1)
-        print(predicted_idx)
         predicted_score = predicted_idx.item()
 
     return predicted_score
 
-print(get_prediction("I hope you die"))
+print(get_prediction("omfg what are you, stupid?"))

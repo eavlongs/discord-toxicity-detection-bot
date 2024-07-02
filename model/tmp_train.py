@@ -97,8 +97,13 @@ class ToxicityDataset(Dataset):
 MAX_LEN = 192
 TRAIN_BATCH_SIZE = 16
 VALID_BATCH_SIZE = 16
+<<<<<<< HEAD
 EPOCHS = 1
 LEARNING_RATE = 3e-5
+=======
+EPOCHS = 4
+LEARNING_RATE = 1e-5
+>>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -123,7 +128,11 @@ class ToxicityClassifer(torch.nn.Module):
         hidden_state = output_1[0]
         pooler = hidden_state[:, 0]
         pooler = self.pre_classifier(pooler)
+<<<<<<< HEAD
         pooler = torch.sigmoid(pooler)
+=======
+        pooler = torch.nn.ReLU()(pooler)
+>>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
         pooler = self.dropout(pooler)
         output = self.classifier(pooler)
         return output
