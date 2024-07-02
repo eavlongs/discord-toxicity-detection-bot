@@ -2,6 +2,7 @@ import os
 import discord
 import random
 from dotenv import load_dotenv
+from toxic import predict_toxicity, OUTPUT_LABEL
 
 # Load the token from the .env file
 load_dotenv()
@@ -39,14 +40,14 @@ def save_followed_channels(followed_channels):
                 file.write(f'{server_id},{channel_id}\n')
 
 
-async def detected_toxicity(message: discord.Message, toxicity=5):
-    # TODO: change this toxicity threshold to your desired value ma baby
-    # if toxicity > 4:
-    if random.randint(0, 10) > 5:
+async def detected_toxicity(message: discord.Message):
+    # label 0 is non-toxic, label 1 is toxic
+    if predict_toxicity(message.content) == OUTPUT_LABEL[1]:
+        print(f'Toxic message detected: {message.content}')
+        
         # delete the message and warn the user
         await message.delete()
-        await message.channel.send(f'{message.author.mention}, your message was deleted because it was too toxic. It reached a toxicity level of {toxicity}.')
-
+        await message.channel.send(f'{message.author.mention}, your message was deleted because it was a toxic message.')
 
 # Create an instance of a client
 intents = discord.Intents.default()
