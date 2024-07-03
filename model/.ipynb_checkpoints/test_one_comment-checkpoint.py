@@ -7,13 +7,8 @@ model = ToxicityClassifer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-<<<<<<< HEAD
 model_path = './trained/v7.pth'  # Adjust the path if necessary
 model = (torch.load(model_path, map_location=device))
-=======
-model_path = './trained/v8.pth'  # Adjust the path if necessary
-model.load_state_dict(torch.load(model_path, map_location=device))
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
 # model = torch.load(model_path, map_location=device)
 # print(model)
 # model.eval()

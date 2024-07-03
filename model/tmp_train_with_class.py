@@ -84,11 +84,11 @@ class ToxicityDataset(Dataset):
         }
 
 # Parameters
-MAX_LEN = 256
+MAX_LEN = 192
 TRAIN_BATCH_SIZE = 16
 VALID_BATCH_SIZE = 16
-EPOCHS = 3
-LEARNING_RATE = 3e-05
+EPOCHS = 1
+LEARNING_RATE = 1e-4
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -135,12 +135,12 @@ model = model.to(device)
 loss_function = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
 
-def calcuate_mse(preds, targets):
-    mse_loss_fn = torch.nn.MSELoss()
-    preds = preds.float()
-    targets = targets.float()
-    mse_loss = mse_loss_fn(preds, targets)
-    return mse_loss.item()
+# def calcuate_mse(preds, targets):
+#     mse_loss_fn = torch.nn.MSELoss()
+#     preds = preds.float()
+#     targets = targets.float()
+#     mse_loss = mse_loss_fn(preds, targets)
+#     return mse_loss.item()
 
 # Training function
 def train(epoch):
@@ -148,7 +148,7 @@ def train(epoch):
     n_correct = 0
     nb_tr_steps = 0
     nb_tr_examples = 0
-    total_mse = 0
+    # total_mse = 0
     model.train()
     start_time = time.time()
     print(f"Training Epoch: {epoch}")
@@ -163,17 +163,17 @@ def train(epoch):
         loss = loss_function(outputs, targets)
         tr_loss += loss.item()
         big_val, big_idx = torch.max(outputs.data, dim=1)
-        mse = calcuate_mse(big_idx, targets)
-        total_mse += mse
+        # mse = calcuate_mse(big_idx, targets)
+        # total_mse += mse
 
         nb_tr_steps += 1
         nb_tr_examples += targets.size(0)
 
         if _ % 100 == 0:
             loss_step = tr_loss / nb_tr_steps
-            avg_mse = total_mse / nb_tr_steps
+            # avg_mse = total_mse / nb_tr_steps
             print(f"Training Loss per 100 steps: {loss_step}")
-            print(f"Training MSE per 100 steps: {avg_mse}")
+            # print(f"Training MSE per 100 steps: {avg_mse}")
             print(f"Time elapsed: {time.time() - start_time:.2f}s")
             start_time = time.time()
 
@@ -186,7 +186,7 @@ def train(epoch):
     epoch_loss = tr_loss/nb_tr_steps
     epoch_accu = (n_correct)/nb_tr_examples
     print(f"Training Loss Epoch: {epoch_loss}")
-    print(f"Training MSE Epoch: {epoch_accu}")
+    # print(f"Training MSE Epoch: {epoch_accu}")
 
     return
 
@@ -205,23 +205,23 @@ def valid(model, testing_loader):
             loss = loss_function(outputs, targets)
             tr_loss += loss.item()
             big_val, big_idx = torch.max(outputs.data, dim=1)
-            mse = calcuate_mse(big_idx, targets)
-            total_mse += mse
+            # mse = calcuate_mse(big_idx, targets)
+            # total_mse += mse
 
             nb_tr_steps += 1
             nb_tr_examples += targets.size(0)
 
             if _ % 100 == 0:
                 loss_step = tr_loss / nb_tr_steps
-                avg_mse = total_mse / nb_tr_steps
+                # avg_mse = total_mse / nb_tr_steps
                 print(f"Validation Loss per 100 steps: {loss_step}")
-                print(f"Validation MSE per 100 steps: {avg_mse}")
+                # print(f"Validation MSE per 100 steps: {avg_mse}")
                 print(f"Time elapsed: {time.time() - start_time:.2f}s")
                 start_time = time.time()
     epoch_loss = tr_loss/nb_tr_steps
     epoch_accu = (n_correct)/nb_tr_examples
     print(f"Validation Loss Epoch: {epoch_loss}")
-    print(f"Validation MSE Epoch: {epoch_accu}")
+    # print(f"Validation MSE Epoch: {epoch_accu}")
 
     return epoch_accu
 
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     for epoch in range(EPOCHS):
         train(epoch)
 
-    output_model_file = './trained/v7.pth'
+    output_model_file = './trained/v8.pth'
 
     model_to_save = model
     torch.save(model_to_save.state_dict(), output_model_file)
