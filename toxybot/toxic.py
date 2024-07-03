@@ -19,7 +19,6 @@ def predict_toxicity(text):
     logits = outputs.logits
     probabilities = torch.softmax(logits, dim=1).cpu().numpy()
 
-    # Assume binary classification with class 0 being non-toxic and class 1 being toxic
     prediction = probabilities.argmax(axis=1).item()
-    
+
     return OUTPUT_LABEL[prediction]

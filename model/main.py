@@ -1,69 +1,189 @@
-import json
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
-from torch.utils.data import Dataset
+from sklearn.utils import compute_class_weight
 import torch
-from transformers import AutoTokenizer
-import pytorch_lightning as pl
-from torch.utils.data import DataLoader
-from transformers import AutoModel, AdamW, get_cosine_schedule_with_warmup
-import torch.nn as nn
-import math
-from torchmetrics.functional.classification import auroc
-import torch.nn.functional as F
-from ToxicityDataModule import ToxicityDataModule, max_token_len
-from ToxicityClassifier import ToxicityClassifier
-from ToxicityDataset import ToxicityDataset
+from torch.utils.data import DataLoader, Dataset
+from transformers import RobertaTokenizer, RobertaModel, get_linear_schedule_with_warmup
+from tqdm import tqdm
+import time
+import os
 
+# Load the dataset
 data_path = "./dataset/processed/train.csv"
-ds = pd.read_csv(data_path, dtype={"id": str})
-print("loaded data")
+df = pd.read_csv(data_path, dtype={"id": str})
 
-X = ds["comment_text"]
-y = ds["score"]
-X, _, y, _ = train_test_split(X, y, test_size=0.7, random_state=103)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=103)
-train_ds = pd.DataFrame({"comment_text": X_train, "score": y_train})
-val_ds = pd.DataFrame({"comment_text": X_test, "score": y_test})
+# Preprocess the dataset
+df['comment_text'] = df['comment_text'].astype(str)
 
+# Split the dataset into training and validation sets
+train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
-model_name = "roberta-base"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-print("created tokenizer")
-train_dataset = ToxicityDataset(train_ds, tokenizer, max_token_len)
-val_dataset = ToxicityDataset(val_ds, tokenizer, max_token_len, sample=None)
-print("created datasets")
+class ToxicityDataset(Dataset):
+    def __init__(self, df, tokenizer, max_len):
+        self.df = df
+        self.tokenizer = tokenizer
+        self.max_len = max_len
 
-tmp_data_module = ToxicityDataModule(train_ds, val_ds, max_token_len, model_name = "roberta-base", batch_size=128)
-tmp_data_module.setup()
-print("setup data module")
+    def __len__(self):
+        return len(self.df)
 
-config = {
-    "model_name": "distilroberta-base",
-    "n_labels": 1,
-    "batch_size": 32,
-    "lr": 1e-4,
-    "warmup": 0.1,
-    "train_size": len(tmp_data_module.train_dataloader()),
-    "w_decay": 0.001,
-    "n_epochs": 3,
-    "threshold": 4
-}
+    def __getitem__(self, index):
+        text = self.df.iloc[index]['comment_text']
+        # score = self.df.iloc[index]['score']
+        target = self.df.iloc[index]['target']
 
-json.dump(config, open("config.json", "w"))
+        inputs = self.tokenizer.encode_plus(
+            text,
+            None,
+            add_special_tokens=True,
+            max_length=self.max_len,
+            padding='max_length',
+            return_token_type_ids=True,
+            truncation=True
+        )
 
-data_module = ToxicityDataModule(train_ds, val_ds, max_token_len, model_name = config["model_name"], batch_size = config["batch_size"])
-data_module.setup()
-print("setup data module")
+        ids = inputs['input_ids']
+        mask = inputs['attention_mask']
+        token_type_ids = inputs['token_type_ids']
 
-model = ToxicityClassifier(config)
+        return {
+            'ids': torch.tensor(ids, dtype=torch.long),
+            'mask': torch.tensor(mask, dtype=torch.long),
+            'token_type_ids': torch.tensor(token_type_ids, dtype=torch.long),
+            'targets': torch.tensor([target], dtype=torch.long)
+        }
 
+# Parameters
+MAX_LEN = 160
+TRAIN_BATCH_SIZE = 16
+VALID_BATCH_SIZE = 16
+EPOCHS = 3
+LEARNING_RATE = 3e-5
+
+tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
+
+# Create datasets
+training_set = ToxicityDataset(train_df, tokenizer, MAX_LEN)
+validation_set = ToxicityDataset(val_df, tokenizer, MAX_LEN)
+
+# Create data loaders
+train_loader = DataLoader(training_set, batch_size=TRAIN_BATCH_SIZE, shuffle=True)
+val_loader = DataLoader(validation_set, batch_size=VALID_BATCH_SIZE, shuffle=False)
+
+class ToxicityClassifer(torch.nn.Module):
+    def __init__(self):
+        super(ToxicityClassifer, self).__init__()
+        self.l1 = RobertaModel.from_pretrained("roberta-base")
+        self.pre_classifier = torch.nn.Linear(768, 768)
+        self.dropout = torch.nn.Dropout(0.1)
+        self.classifier = torch.nn.Linear(768, 1)
+
+    def forward(self, input_ids, attention_mask, token_type_ids):
+        output_1 = self.l1(input_ids=input_ids, attention_mask=attention_mask, token_type_ids=token_type_ids)
+        hidden_state = output_1[0]
+        pooler = hidden_state[:, 0]
+        pooler = self.pre_classifier(pooler)
+        pooler = torch.sigmoid(pooler)
+        pooler = self.dropout(pooler)
+        output = self.classifier(pooler)
+        return output
+
+# Model definition
+model = ToxicityClassifer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model.to(device)
-torch.set_float32_matmul_precision("medium")
+model = model.to(device)
 
-# if __name__ == "__main__":
-#     trainer = pl.Trainer(max_epochs=config["n_epochs"], num_sanity_val_steps=2, logger = True, enable_progress_bar = True, num_nodes = 1, precision=16)
-#     print("created model. starting to fit the model...")
-#     trainer.fit(model, data_module)
-#     torch.save(model.state_dict(), './model.pth')
+loss_function = torch.nn.BCEWithLogitsLoss()
+optimizer = torch.optim.AdamW(params = model.parameters(), lr=LEARNING_RATE)
+
+total_steps = len(train_loader) * EPOCHS
+scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=0, num_training_steps=total_steps)
+
+# Training function
+def train(epoch):
+    tr_loss = 0
+    n_correct = 0
+    nb_tr_steps = 0
+    nb_tr_examples = 0
+    model.train()
+    start_time = time.time()
+    print(f"Training Epoch: {epoch}")
+    print(f"Training Dataset Size: {len(train_loader)}")
+    for _, data in tqdm(enumerate(train_loader, 0)):
+        ids = data['ids'].to(device, dtype=torch.long)
+        mask = data['mask'].to(device, dtype=torch.long)
+        token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
+        targets = data['targets'].to(device, dtype=torch.float)
+
+        outputs = model(ids, mask, token_type_ids)
+        loss = loss_function(outputs, targets)
+        tr_loss += loss.item()
+        big_val = torch.sigmoid(outputs)
+        big_idx = (big_val > 0.5).float()
+        n_correct += (big_idx == targets).sum().item()
+
+        nb_tr_steps += 1
+        nb_tr_examples += targets.size(0)
+
+        if _ % 100 == 0:
+            loss_step = tr_loss / nb_tr_steps
+            print(f"Training Loss per 100 steps: {loss_step}")
+            print(f"Time elapsed: {time.time() - start_time:.2f}s")
+            start_time = time.time()
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    print(f'The Total Accuracy for Epoch {epoch}: {n_correct / nb_tr_examples}')
+    epoch_loss = tr_loss / nb_tr_steps
+    epoch_accu = n_correct / nb_tr_examples
+    print(f"Training Loss Epoch: {epoch_loss}")
+
+    return
+
+# Validation function
+def valid(model, testing_loader):
+    model.eval()
+    n_correct = 0
+    tr_loss = 0
+    nb_tr_steps = 0
+    nb_tr_examples = 0
+    start_time = time.time()
+    with torch.no_grad():
+        for _, data in tqdm(enumerate(testing_loader, 0)):
+            ids = data['ids'].to(device, dtype=torch.long)
+            mask = data['mask'].to(device, dtype=torch.long)
+            token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
+            targets = data['targets'].to(device, dtype=torch.float)
+            outputs = model(ids, mask, token_type_ids)
+            loss = loss_function(outputs, targets)
+            tr_loss += loss.item()
+            big_val = torch.sigmoid(outputs)
+            big_idx = (big_val > 0.5).float()
+            n_correct += (big_idx == targets).sum().item()
+
+            nb_tr_steps += 1
+            nb_tr_examples += targets.size(0)
+
+            if _ % 100 == 0:
+                loss_step = tr_loss / nb_tr_steps
+                print(f"Validation Loss per 100 steps: {loss_step}")
+                print(f"Time elapsed: {time.time() - start_time:.2f}s")
+                start_time = time.time()
+    epoch_loss = tr_loss / nb_tr_steps
+    epoch_accu = n_correct / nb_tr_examples
+    print(f"Validation Loss Epoch: {epoch_loss}")
+    print(f"Validation Accuracy Epoch: {epoch_accu}")
+
+    return epoch_accu
+
+if __name__ == "__main__":
+    # Uncomment when training
+    for epoch in range(EPOCHS):
+        train(epoch)
+        output_model_file = './trained/v9.pth'
+        torch.save(model.state_dict(), output_model_file)
+        acc = valid(model, val_loader)
+        torch.save(model.state_dict(), output_model_file)
