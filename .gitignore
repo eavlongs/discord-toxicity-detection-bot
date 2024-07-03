@@ -12,3 +12,4 @@ lightning_logs/
 
 /model/trained/*
 /model/vocab/*
+/model/checkpoints/*

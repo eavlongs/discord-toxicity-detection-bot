@@ -7,8 +7,10 @@ model = ToxicityClassifer()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 
-model_path = './trained/v8.pth'  # Adjust the path if necessary
+model_path = './trained/v9.pth'  # Adjust the path if necessary
 model.load_state_dict(torch.load(model_path, map_location=device))
+
+print(model)
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
 MAX_LEN = 196
@@ -24,9 +26,9 @@ def get_prediction(comment):
         truncation=True
     )
 
-    ids = torch.tensor(inputs['input_ids'], dtype=torch.long).unsqueeze(0).to(device)
-    mask = torch.tensor(inputs['attention_mask'], dtype=torch.long).unsqueeze(0).to(device)
-    token_type_ids = torch.tensor(inputs['token_type_ids'], dtype=torch.long).unsqueeze(0).to(device)
+    ids = torch.tensor([inputs['input_ids']], dtype=torch.long).to(device)
+    mask = torch.tensor([inputs['attention_mask']], dtype=torch.long).to(device)
+    token_type_ids = torch.tensor([inputs['token_type_ids']], dtype=torch.long).to(device)
     # ids = data['ids'].to(device, dtype = torch.long)
     # mask = data['mask'].to(device, dtype = torch.long)
     # token_type_ids = data['token_type_ids'].to(device, dtype=torch.long)
@@ -37,12 +39,8 @@ def get_prediction(comment):
     with torch.no_grad():
         outputs = model(ids, mask, token_type_ids)
         # Apply softmax to convert logits to probabilities
-        print(outputs)
-        probabilities = F.softmax(outputs, dim=1)
-        print(probabilities)
-        _, predicted_idx = torch.max(probabilities, dim=1)
-        predicted_score = predicted_idx.item()
+        prediction = torch.sigmoid(outputs).item()
 
-    return predicted_score
+    return prediction
 
-print(get_prediction("omfg what are you, stupid?"))
+print("predicted:", get_prediction("hello nice to meet you"))

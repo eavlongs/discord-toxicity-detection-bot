@@ -53,7 +53,6 @@ df.sample(frac=1).reset_index(drop=True)
 # exit()
 
 # Split the dataset into training and validation sets
-df, _ = train_test_split(df, test_size=0.75, random_state=42)
 train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
 # print(train_df.shape)
@@ -94,16 +93,11 @@ class ToxicityDataset(Dataset):
         }
 
 # Parameters
-MAX_LEN = 192
+MAX_LEN = 160
 TRAIN_BATCH_SIZE = 16
 VALID_BATCH_SIZE = 16
-<<<<<<< HEAD
-EPOCHS = 1
+EPOCHS = 3
 LEARNING_RATE = 3e-5
-=======
-EPOCHS = 4
-LEARNING_RATE = 1e-5
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -128,11 +122,7 @@ class ToxicityClassifer(torch.nn.Module):
         hidden_state = output_1[0]
         pooler = hidden_state[:, 0]
         pooler = self.pre_classifier(pooler)
-<<<<<<< HEAD
         pooler = torch.sigmoid(pooler)
-=======
-        pooler = torch.nn.ReLU()(pooler)
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
         pooler = self.dropout(pooler)
         output = self.classifier(pooler)
         return output
@@ -253,27 +243,16 @@ if __name__ == "__main__":
     for epoch in range(EPOCHS):
         train(epoch)
         acc = valid(model, val_loader)
-        is_best = acc > best_accuracy
-        best_accuracy = max(acc, best_accuracy)
+        
+        output_model_file = './trained/v9.pth'
+        model_to_save = model
+        torch.save(model_to_save.state_dict(), output_model_file)
 
-        # Save checkpoint
-        checkpoint = {
-            'epoch': epoch + 1,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler.state_dict(),
-            'best_accuracy': best_accuracy,
-        }
-        save_checkpoint(checkpoint, is_best, filename=os.path.join(checkpoint_dir, f'checkpoint_epoch_{epoch}.pth'))
-
-    output_model_file = './trained/v9.pth'
-
-    model_to_save = model
-    torch.save(model_to_save.state_dict(), output_model_file)
+   
 
     # Uncomment when validating
-    acc = valid(model, val_loader)
-    print("Accuracy on test data = %0.2f%%" % acc)
+    # acc = valid(model, val_loader)
+    # print("Accuracy on test data = %0.2f%%" % acc)
 
-    model_to_save = model
-    torch.save(model_to_save.state_dict(), output_model_file)
+    # model_to_save = model
+    # torch.save(model_to_save.state_dict(), output_model_file)
