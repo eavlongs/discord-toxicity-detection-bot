@@ -242,24 +242,10 @@ if __name__ == "__main__":
     # Uncomment when training
     for epoch in range(EPOCHS):
         train(epoch)
+        output_model_file = './trained/v9.pth'
+        torch.save(model.state_dict(), output_model_file)
         acc = valid(model, val_loader)
-        is_best = acc > best_accuracy
-        best_accuracy = max(acc, best_accuracy)
-
-        # Save checkpoint
-        checkpoint = {
-            'epoch': epoch + 1,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'scheduler': scheduler.state_dict(),
-            'best_accuracy': best_accuracy,
-        }
-        save_checkpoint(checkpoint, is_best, filename=os.path.join(checkpoint_dir, f'checkpoint_epoch_{epoch}.pth'))
-
-    output_model_file = './trained/v9.pth'
-
-    model_to_save = model
-    torch.save(model_to_save.state_dict(), output_model_file)
+        torch.save(model.state_dict(), output_model_file)
 
     # Uncomment when validating
     # acc = valid(model, val_loader)
