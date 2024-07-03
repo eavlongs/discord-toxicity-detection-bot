@@ -10,11 +10,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Load tokenizer and model
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
-<<<<<<< HEAD
 model_path = './trained/seakmeng.pth'  # Adjust the path if necessary
-=======
-model_path = './trained-temp/v3.pth'  # Adjust the path if necessary
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
+
 model = RobertaForSequenceClassification.from_pretrained('roberta-base', num_labels=11)
 model.load_state_dict(torch.load(model_path, map_location=device))
 model = model.to(device)
@@ -87,11 +84,9 @@ def predict_single_comment(comment, tokenizer, model, device, max_len=192):
     return probabilities.cpu().numpy()
 
 # Example usage
-<<<<<<< HEAD
+
 comment = "i hope you die"
-=======
-comment = "fuck you you motherfucker"
->>>>>>> f159269b5a845d797e3112b3a0b4451da5f2db87
+
 probabilities = predict_single_comment(comment, tokenizer, model, device)
 print(probabilities)
 

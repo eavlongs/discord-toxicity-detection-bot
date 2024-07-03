@@ -2,11 +2,10 @@ from transformers import RobertaTokenizer, RobertaForSequenceClassification
 import torch
 
 # load tokenizer and model weights
-tokenizer = RobertaTokenizer.from_pretrained('./roberta_toxicity_classifier')
-model = RobertaForSequenceClassification.from_pretrained('./roberta_toxicity_classifier')
-OUTPUT_LABEL = ["non-toxic", "toxic"]
+tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+model = RobertaForSequenceClassification.from_pretrained('./model')
 # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# model = model.to(device)
+OUTPUT_LABEL = ["non-toxic", "toxic"]
 
 def predict_toxicity(text):
     # Tokenize the input text

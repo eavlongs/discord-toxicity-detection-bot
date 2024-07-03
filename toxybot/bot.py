@@ -40,7 +40,7 @@ def save_followed_channels(followed_channels):
                 file.write(f'{server_id},{channel_id}\n')
 
 
-async def detected_toxicity(message: discord.Message):
+async def detect_toxicity(message: discord.Message):
     # label 0 is non-toxic, label 1 is toxic
     if predict_toxicity(message.content) == OUTPUT_LABEL[1]:
         print(f'Toxic message detected: {message.content}')
@@ -138,7 +138,7 @@ async def on_message(message: discord.Message):
 
     # Only reply if the message is in a followed channel
     elif IS_MESSAGE_FROM_FOLLOWED_CHANNEL:
-        await detected_toxicity(message)
+        await detect_toxicity(message)
         # Mention the user who sent the message and include their message content
         # channel_name = message.channel.name
         # await message.channel.send(f'{message.content} - {message.author.mention}, in <#{message.channel.id}>')

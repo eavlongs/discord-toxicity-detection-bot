@@ -53,7 +53,6 @@ df.sample(frac=1).reset_index(drop=True)
 # exit()
 
 # Split the dataset into training and validation sets
-df, _ = train_test_split(df, test_size=0.75, random_state=42)
 train_df, val_df = train_test_split(df, test_size=0.2, random_state=42)
 
 # print(train_df.shape)
@@ -94,11 +93,11 @@ class ToxicityDataset(Dataset):
         }
 
 # Parameters
-MAX_LEN = 192
+MAX_LEN = 160
 TRAIN_BATCH_SIZE = 16
 VALID_BATCH_SIZE = 16
-EPOCHS = 4
-LEARNING_RATE = 1e-5
+EPOCHS = 3
+LEARNING_RATE = 3e-5
 
 tokenizer = RobertaTokenizer.from_pretrained('roberta-base', truncation=True, do_lower_case=True)
 
@@ -263,8 +262,8 @@ if __name__ == "__main__":
     torch.save(model_to_save.state_dict(), output_model_file)
 
     # Uncomment when validating
-    acc = valid(model, val_loader)
-    print("Accuracy on test data = %0.2f%%" % acc)
+    # acc = valid(model, val_loader)
+    # print("Accuracy on test data = %0.2f%%" % acc)
 
-    model_to_save = model
-    torch.save(model_to_save.state_dict(), output_model_file)
+    # model_to_save = model
+    # torch.save(model_to_save.state_dict(), output_model_file)
